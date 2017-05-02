@@ -11,8 +11,12 @@ class Worker(threading.Thread):
             if not gq.SHARE_Q.empty():
                 item = gq.SHARE_Q.get()  # 获得任务
                 print("[Processing]:", item)
-                time.sleep(1)
-                sender.send("OK Finish")
+                import stock_main as sm
+                flag_ml = sm.execute_ml(stock_id=item)
+                if flag_ml == "success":
+                    sender.send("[Success]:" + item)
+                else:
+                    sender.send("[Fail]:" + item)
 
 
 class Receiver(threading.Thread):

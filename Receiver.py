@@ -1,4 +1,5 @@
 import pika
+import re
 import Global_Queue as gq
 
 def receive():
@@ -13,7 +14,7 @@ def receive():
     # 定义一个回调函数来处理，这边的回调函数就是将信息打印出来。
     def callback(ch, method, properties, body):
         body = body.decode()
-        gq.SHARE_Q.put(body)
+        gq.SHARE_Q.put(re.sub("\D", "", body))
         print("[Require] Get:", body)
 
     # 告诉rabbitmq使用callback来接收信息
