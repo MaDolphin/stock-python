@@ -5,28 +5,31 @@ import tensorflow as tf
 import time
 import tushare as ts
 
+from SQL_Dao import inset_db
+
 # Iinitial Variable
 TIME_STEPS = 10
-INPUT_SIZE = 13
+INPUT_SIZE = 12
 OUTPUT_SIZE = 1
 BATCH_SIZE = 10
 CELL_SIZE = 10
 LR = 0.0006
 
 
-def load_data(stock_id, col_begin=1, col_end=15):
+def load_data(stock_id, col_begin=0, col_end=14):
     date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-    df = ts.get_hist_data(stock_id, start='2014-05-05', end=date)
+    df = ts.get_hist_data(stock_id, start='2015-05-05', end=date)
+    df = df.iloc[2:]
     df = df[::-1]
     data = df.iloc[:, col_begin: col_end].values
     return data
 
 
 # get TrainTest
-def get_train_data(stock_id, batch_size, time_step, train_begin, train_end):
+def get_train_data(stock_id, batch_size, time_step, time_span):
     data = load_data(stock_id)
     batch_index = []
-    data_train = data[train_begin: train_end]
+    data_train = data[:-time_span]
     mean = np.mean(data_train, axis=0)
     std = np.std(data_train, axis=0)
     normalized_train_data = (data_train - mean) / std  # normalize train data
@@ -130,12 +133,12 @@ def lstm(object):
 
 
 # Train Model
-def train_lstm(stock_id, batch_size=20, time_step=10, train_begin=0, train_end=500):
+def train_lstm(stock_id, batch_size=20, time_step=10, time_span=20):
     with tf.name_scope('inputs'):
         X = tf.placeholder(tf.float32, shape=[None, time_step, INPUT_SIZE], name='x_input')
         Y = tf.placeholder(tf.float32, shape=[None, time_step, OUTPUT_SIZE], name='y_input')
 
-    batch_index, train_x, train_y = get_train_data(stock_id, batch_size, time_step, train_begin, train_end)
+    batch_index, train_x, train_y = get_train_data(stock_id, batch_size, time_step, time_span)
     pred, _ = lstm(X)
 
     # loss function
@@ -148,10 +151,10 @@ def train_lstm(stock_id, batch_size=20, time_step=10, train_begin=0, train_end=5
     saver = tf.train.Saver()
     with tf.Session() as sess:
         # merged = tf.summary.merge_all()
-        writer = tf.summary.FileWriter("logs2", sess.graph)
+        writer = tf.summary.FileWriter("tf_log", sess.graph)
         sess.run(tf.global_variables_initializer())
 
-        for i in range(1000):
+        for i in range(100):
             for step in range(len(batch_index) - 1):
                 feed_dict = {X: train_x[batch_index[step]:batch_index[step + 1]],
                              Y: train_y[batch_index[step]:batch_index[step + 1]]}
@@ -164,7 +167,7 @@ def train_lstm(stock_id, batch_size=20, time_step=10, train_begin=0, train_end=5
 
         # save Model Variables
         date = time.strftime('%Y%m%d', time.localtime(time.time()))
-        save_file_path = "ft_net/" + stock_id + "-" + date + ".ckpt"
+        save_file_path = "tf_net/" + stock_id + "-" + date + ".ckpt"
         save_path = saver.save(sess, save_file_path)
         print("Save to path: ", save_path)
         return "success", save_file_path
@@ -200,14 +203,19 @@ def prediction(stock_id, save_file_path, time_step=1, time_span=20):
         acc = np.average(np.abs(test_predict[:20] - test_y[:len(test_predict) - 1]) / test_y[:len(test_predict) - 1])
         print(acc)
 
-        # draw Graph
-        plt.figure()
-        plt.plot(list(range(len(test_predict))), test_predict, color='r')
-        plt.plot(list(range(len(test_y))), test_y, color='b')
-        plt.legend(['predict', 'true'])
-        plt.show()
+        # # draw Graph
+        # plt.figure()
+        # plt.plot(list(range(len(test_predict))), test_predict, color='r')
+        # plt.plot(list(range(len(test_y))), test_y, color='b')
+        # plt.legend(['predict', 'true'])
+        # plt.show()
         return test_y, test_predict
 
 
 # train_lstm(stock_id='600000')
-prediction(stock_id='600000')
+stock_id='600000'
+date = time.strftime('%Y%m%d', time.localtime(time.time()))
+save_file_path = "tf_net/" + stock_id + "-" + date + ".ckpt"
+true_data, prediction_data = prediction(stock_id='600000', save_file_path=save_file_path)
+date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+inset_db(stock_id='600000', date=date, true_data=true_data, prediction_data=prediction_data)
