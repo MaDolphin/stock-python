@@ -124,7 +124,7 @@ def prediction(stock_id, save_file_path, time_step=1, time_span=20, rnn_name="")
         saver.restore(sess, save_file_path)
 
         test_predict = []
-        for step in range(100):
+        for step in range(20):
             prob = sess.run(pred, feed_dict={X: [test_x[step]]})
             predict = prob.reshape((-1))
             test_predict.extend(predict)

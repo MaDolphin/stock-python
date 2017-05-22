@@ -131,7 +131,7 @@ def train_lstm(stock_id, batch_size=20, time_step=10, time_span=20, rnn_name="")
 
         sess.run(tf.global_variables_initializer())
 
-        for i in range(100):
+        for i in range(1000):
             for step in range(len(batch_index) - 1):
                 feed_dict = {X: train_x[batch_index[step]:batch_index[step + 1]],
                              Y: train_y[batch_index[step]:batch_index[step + 1]]}
