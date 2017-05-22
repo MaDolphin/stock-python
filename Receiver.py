@@ -2,8 +2,8 @@ import pika
 import re
 import Global_Queue as gq
 
-def receive():
 
+def receive():
     # 连接到rabbitmq服务器
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='121.42.197.31'))
     channel = connection.channel()

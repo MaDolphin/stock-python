@@ -5,6 +5,8 @@ import tensorflow as tf
 import time
 import tushare as ts
 
+rnn_def = ""
+
 # Iinitial Variable
 TIME_STEPS = 10
 INPUT_SIZE = 12
@@ -12,6 +14,7 @@ OUTPUT_SIZE = 1
 BATCH_SIZE = 10
 CELL_SIZE = 10
 LR = 0.0006
+
 
 
 def load_data(stock_id, col_begin=0, col_end=14):
@@ -43,6 +46,7 @@ def get_train_data(stock_id, batch_size, time_step, time_span):
     # print('train_x:\n', train_x)
     return batch_index, train_x, train_y
 
+
 # define Variable
 
 # 权重
@@ -59,6 +63,9 @@ biases = {
 
 # define LSTM
 def lstm(object):
+
+    global rnn_def
+
     batch_size = tf.shape(object)[0]
     time_step = tf.shape(object)[1]
 
@@ -86,7 +93,7 @@ def lstm(object):
     init_state = train_cell.zero_state(batch_size, dtype=tf.float32)
 
     # output_rnn是记录lstm每个输出节点的结果，final_states是最后一个cell的结果
-    with tf.variable_scope('rnn_def'):
+    with tf.variable_scope(rnn_def):
         output_rnn, final_states = tf.nn.dynamic_rnn(train_cell, input_rnn, initial_state=init_state, dtype=tf.float32)
 
     # ----------------- output_layer ------------------------
@@ -105,7 +112,9 @@ def lstm(object):
 
 
 # Train Model
-def train_lstm(stock_id, batch_size=20, time_step=10, time_span=20):
+def train_lstm(stock_id, batch_size=20, time_step=10, time_span=20, rnn_name=""):
+    global rnn_def
+    rnn_def = rnn_name
     X = tf.placeholder(tf.float32, shape=[None, time_step, INPUT_SIZE])
     Y = tf.placeholder(tf.float32, shape=[None, time_step, OUTPUT_SIZE])
 
@@ -122,7 +131,7 @@ def train_lstm(stock_id, batch_size=20, time_step=10, time_span=20):
 
         sess.run(tf.global_variables_initializer())
 
-        for i in range(20):
+        for i in range(100):
             for step in range(len(batch_index) - 1):
                 feed_dict = {X: train_x[batch_index[step]:batch_index[step + 1]],
                              Y: train_y[batch_index[step]:batch_index[step + 1]]}

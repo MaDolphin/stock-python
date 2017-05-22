@@ -5,6 +5,8 @@ import tensorflow as tf
 import time
 import tushare as ts
 
+rnn_def = ""
+
 # Iinitial Variable
 TIME_STEPS = 10
 INPUT_SIZE = 12
@@ -58,6 +60,7 @@ biases = {
 
 # define LSTM
 def lstm(object):
+    global rnn_def
     batch_size = tf.shape(object)[0]
     time_step = tf.shape(object)[1]
 
@@ -85,7 +88,7 @@ def lstm(object):
     init_state = prediction_cell.zero_state(batch_size, dtype=tf.float32)
 
     # output_rnn是记录lstm每个输出节点的结果，final_states是最后一个cell的结果
-    with tf.variable_scope('rnn_def', reuse=True):
+    with tf.variable_scope(rnn_def, reuse=True):
         output_rnn, final_states = tf.nn.dynamic_rnn(prediction_cell, input_rnn, initial_state=init_state,
                                                      dtype=tf.float32)
 
@@ -105,7 +108,10 @@ def lstm(object):
 
 
 # Test Model
-def prediction(stock_id, save_file_path, time_step=1, time_span=20):
+def prediction(stock_id, save_file_path, time_step=1, time_span=20, rnn_name=""):
+    global rnn_def
+    rnn_def = rnn_name
+
     X = tf.placeholder(tf.float32, shape=[None, time_step, INPUT_SIZE])
 
     mean, std, test_x, test_y = get_test_data(stock_id, time_step, time_span)
@@ -118,7 +124,7 @@ def prediction(stock_id, save_file_path, time_step=1, time_span=20):
         saver.restore(sess, save_file_path)
 
         test_predict = []
-        for step in range(20):
+        for step in range(100):
             prob = sess.run(pred, feed_dict={X: [test_x[step]]})
             predict = prob.reshape((-1))
             test_predict.extend(predict)

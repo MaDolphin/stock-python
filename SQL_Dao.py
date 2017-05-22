@@ -14,7 +14,7 @@ def inset_db(stock_id, date, true_data, prediction_data):
     sql_data = prepare_date(stock_id, date, true_data, prediction_data)
     print(sql_data)
     # 一次插入多条记录
-    sqli = "insert into prediction values(%s, %s, %s, %s, %s)"
+    sqli = "insert into prediction values (0,%s, %s, %s, %s, %s)"
     cur.executemany(sqli, sql_data)
 
     cur.close()
